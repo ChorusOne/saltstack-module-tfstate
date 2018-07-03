@@ -81,7 +81,7 @@ def _gets3 (key, profile):
     '''
     s3 = boto3.resource('s3')
     bucket = s3.Bucket(profile.get('bucket'))
-    s3.Object(profile.get('bucket'), 'terraform-test-cs.tfstate').download_file('/tmp/salt_tfstate')
+    s3.Object(profile.get('bucket'), profile.get('key')).download_file('/tmp/salt_tfstate')
     return _parseTfstateFile(key, '/tmp/salt_tfstate')
 
 
@@ -92,7 +92,7 @@ def _getFile (key, profile):
     return _parseTfstateFile(key, profile.get('tfstatefile'))
 
 
-def _parseTfstateFile(key, filename):
+def _parseTfstateFile(full_key, filename):
     '''
     Parse the provided tfstate file, and search for the keyself.
     TODO: support array values

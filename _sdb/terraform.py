@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=import-error
 '''
 Terraform tfstate SDB Module
 :maintainer:    Joe Bowman

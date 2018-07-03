@@ -27,9 +27,12 @@ and ``public_ip`` is the key of the attribute for which you wish to return data.
 
 # import python libs
 from __future__ import absolute_import, print_function, unicode_literals
-import logging, salt.exceptions, boto3, json
+import logging
+import json
+import boto3
+import salt.exceptions
 
-log = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 __func_alias__ = {
     'set_': 'set'
@@ -52,57 +55,55 @@ def get(key, profile=None):
     Get a value from the terraform tfstate.
     '''
     backends = {
-        'file': _getFile,
-        's3': _gets3,
-        'notImplemented': _notImplementedBackend
+        'file': get_file,
+        's3': get_s3
     }
     try:
-        func = backends.get(profile.get('backend'), '_notImplementedBackend')
+        func = backends.get(profile.get('backend'), 'notimplmented_backend')
         retval = func(key, profile)
-    except Exception as e:
-        log.error('Failed to read value! %s: %s', key, e)
-        raise salt.exceptions.CommandExecutionError(e)
+    except Exception as exception:
+        LOG.error('Failed to read value! %s: %s', key, exception)
+        raise salt.exceptions.CommandExecutionError(exception)
 
     return retval
 
 
-def _notImplementedBackend():
+def notimplmented_backend():
     '''
     If we try to define a backend that is unsupported, throwself.
     '''
     raise salt.exceptions.NotImplemented()
 
 
-def _gets3 (key, profile):
+def get_s3(key, profile):
     '''
     Fetch state file from s3 bucket. Currently only supports IAM roles,
     .aws/credentials files and env_vars.
     TODO: support caching.
     '''
-    s3 = boto3.resource('s3')
-    bucket = s3.Bucket(profile.get('bucket'))
-    s3.Object(profile.get('bucket'), profile.get('key')).download_file('/tmp/salt_tfstate')
-    return _parseTfstateFile(key, '/tmp/salt_tfstate')
+    s3_res = boto3.resource('s3')
+    s3_res.Object(profile.get('bucket'), profile.get('key')).download_file('/tmp/salt_tfstate')
+    return parse_tfstate_file(key, '/tmp/salt_tfstate')
 
 
-def _getFile (key, profile):
+def get_file(key, profile):
     '''
     Fetch tfstate from a file.
     '''
-    return _parseTfstateFile(key, profile.get('tfstatefile'))
+    return parse_tfstate_file(key, profile.get('tfstatefile'))
 
 
-def _parseTfstateFile(full_key, file_path):
+def parse_tfstate_file(full_key, file_path):
     '''
     Parse the provided tfstate file, and search for the keyself.
     TODO: support array values
     TODO: support splat values
     '''
-    key,attr = full_key.split('/')
+    key, attr = full_key.split('/')
     key_parts = key.split('.')
 
-    with open(file_path) as f:
-        data = json.load(f)
+    with open(file_path) as tffile:
+        data = json.load(tffile)
 
     ## this looks a little cludgy, but essentially convert the list of modules
     ## to a map using the path (this has to be unique in TF) as the key.
@@ -112,7 +113,7 @@ def _parseTfstateFile(full_key, file_path):
     for k in modules_orig:
         data.get('modules').update({':'.join(k.get('path')): k})
 
-    if (key_parts[0] == 'module'):
+    if key_parts[0] == 'module':
         ## we're checking for a module
         mod_path = 'root:{}'.format(key_parts[1])
         key_parts = key_parts[2:]

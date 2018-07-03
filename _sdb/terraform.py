@@ -92,7 +92,7 @@ def _getFile (key, profile):
     return _parseTfstateFile(key, profile.get('tfstatefile'))
 
 
-def _parseTfstateFile(full_key, filename):
+def _parseTfstateFile(full_key, file_path):
     '''
     Parse the provided tfstate file, and search for the keyself.
     TODO: support array values

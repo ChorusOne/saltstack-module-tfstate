@@ -131,7 +131,7 @@ def parse_tfstate_file(full_key, file_path):
 
     result = parse_identifier(key_parts, attr, data)
     if type(result) == 'string':
-        return result
+        return result.strip('"')
     else:
         return json.dumps(result)
 

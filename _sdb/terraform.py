@@ -130,8 +130,8 @@ def parse_tfstate_file(full_key, file_path):
         data.get('modules').update({':'.join(k.get('path')): k})
 
     result = parse_identifier(key_parts, attr, data)
-    if type(result) == 'string':
-        return result.strip('"')
+    if type(result) in ['string', unicode]:
+        return result.strip('\"')
     else:
         return json.dumps(result)
 

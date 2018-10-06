@@ -91,15 +91,15 @@ def get_s3(key, profile):
     hashfunc.update(profile.get('key'))
     hash = binascii.hexlify(hashfunc.digest())
     if os.path.exists('/tmp/salt_tfstate_{}'.format(hash)) == False:
-        print ("Fetching tfstate from s3")
+        LOG.debug("Fetching tfstate from s3")
         s3_res.Object(profile.get('bucket'), profile.get('key')).download_file('/tmp/salt_tfstate_{}'.format(hash))
     else:
         stat = os.stat('/tmp/salt_tfstate_{}'.format(hash))
         if stat.st_mtime + profile.get('cache_duration', 60) < time.time():
-            print ("Cache is stale; refreshing from s3...")
+            LOG.debug("Cache is stale; refreshing tfstate from s3...")
             s3_res.Object(profile.get('bucket'), profile.get('key')).download_file('/tmp/salt_tfstate_{}'.format(hash))
         else:
-            print ("Using cache...")
+            LOG.debug("Fetching tfstate from cache...")
     return parse_tfstate_file(key, '/tmp/salt_tfstate_{}'.format(hash))
 
 

@@ -136,7 +136,7 @@ def parse_tfstate_file(full_key, file_path):
 
     if type(result) in ['string', unicode]:
         return result.strip('\"')
-    elif result == None:
+    elif result == None or result == "":
         default_value = params.get('default', [None])[0]
         if default_value == '[]':
           return []

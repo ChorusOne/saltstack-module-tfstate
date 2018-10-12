@@ -36,6 +36,7 @@ import binascii
 import boto3
 import time
 import re
+from urlparse import parse_qs
 import salt.exceptions
 
 LOG = logging.getLogger(__name__)
@@ -115,8 +116,10 @@ def parse_tfstate_file(full_key, file_path):
     Parse the provided tfstate file, and search for the key.
     '''
 
+    full_key, _, param_string = full_key.partition('?')
     key, attr = full_key.split('/')
     key_parts = key.split('.')
+    params = parse_qs(param_string)
 
     with open(file_path) as tffile:
         data = json.load(tffile)
@@ -130,8 +133,19 @@ def parse_tfstate_file(full_key, file_path):
         data.get('modules').update({':'.join(k.get('path')): k})
 
     result = parse_identifier(key_parts, attr, data)
+
     if type(result) in ['string', unicode]:
         return result.strip('\"')
+    elif result == None:
+        default_value = params.get('default', [None])[0]
+        if default_value == '[]':
+          return []
+        elif default_value == '{}':
+          return {}
+        elif default_value == 'None':
+          return None
+        else:
+          return default_value
     else:
         return json.dumps(result)
 
@@ -159,6 +173,7 @@ def parse_identifier(key_parts, attr, data):
     else:
         ## fetch one or more resources
         result = [fetch_resource(key_parts, attr, data.get('modules', {}).get(p, {}).get('resources', {})) for p in mod_paths]
+
     return flatten(result)
 
 
